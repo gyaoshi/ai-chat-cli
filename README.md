@@ -177,8 +177,7 @@ ai.bat / login.bat       启动器（自动寻找 Python 解释器）
 login_keep.py            登录窗口（窗口保留 N 分钟，关窗即保存）
 kill_stale.py            清理占用 browser_profile 的残留 Edge 进程
 inspect_site.py          抓页面 DOM 结构 + 截图（网页改版时用）
-probe_send.py            实发一条消息验证选择器
-probe_tongyi_marker.py   抓"消息节点"锚点（示例，可照抄改其他站）
+probe_send.py            实发一条消息验证选择器（同时 dump 回复 DOM 到 test_report/）
 test_mock.html           本地模拟 AI 页面（自测用）
 requirements.txt         playwright
 ```
@@ -355,8 +354,7 @@ ai.bat / login.bat       Windows launchers (auto-detect the Python interpreter)
 login_keep.py            login window (stays open N minutes, saves on close)
 kill_stale.py            kill leftover Edge processes holding browser_profile
 inspect_site.py          dump a site's DOM structure + screenshot (for redesigns)
-probe_send.py            send one real message to verify selectors
-probe_tongyi_marker.py   find "message node" anchors (example, copy for other sites)
+probe_send.py            send one real message to verify selectors (also dumps reply DOM to test_report/)
 test_mock.html           local mock AI page for self-testing
 requirements.txt         playwright
 ```
