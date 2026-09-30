@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Mock AI</title></head>
+<body style="font-family: sans-serif; max-width: 700px; margin: 30px auto;">
+<h3>Mock AI 测试页</h3>
+<div id="chat"></div>
+<textarea id="chat-input" placeholder="发消息" style="width: 100%; height: 60px;"></textarea>
+<script>
+var input = document.getElementById('chat-input');
+var chat = document.getElementById('chat');
+var counter = 0;
+input.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    var msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    counter++;
+    var userDiv = document.createElement('div');
+    userDiv.className = 'mock-user';
+    userDiv.textContent = '用户: ' + msg;
+    chat.appendChild(userDiv);
+    var replyDiv = document.createElement('div');
+    replyDiv.className = 'mock-reply';
+    chat.appendChild(replyDiv);
+    var full = '收到你的消息「' + msg + '」。这是模拟AI的第' + counter + '条回复，' +
+      '用于自动化测试验证发送与流式回复捕获是否正常工作，内容足够长以模拟真实的逐字输出效果。';
+    var i = 0;
+    var timer = setInterval(function () {
+      i += 3;
+      replyDiv.textContent = full.slice(0, i);
+      if (i >= full.length) clearInterval(timer);
+    }, 200);
+  }
+});
+</script>
+</body>
+</html>

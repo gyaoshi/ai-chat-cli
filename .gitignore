@@ -1,0 +1,20 @@
+# local browser profile (contains your cookies / login state - never commit)
+browser_profile/
+# generated results
+output/
+test_report/
+# local interpreter path (machine specific)
+python_path.txt
+# scratch files
+_out.txt
+_err.txt
+_d.txt
+_der.txt
+_all.json
+_all.err
+_j.json
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
