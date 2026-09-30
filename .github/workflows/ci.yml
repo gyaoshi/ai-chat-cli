@@ -77,7 +77,7 @@ jobs:
           # 这里必须能自己在用户目录生成 sites.json —— 验证"配置找不到"这个坑已解决
           ai-chat-cli sites
           test -f "$HOME/.config/ai-chat-cli/sites.json"
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/*
