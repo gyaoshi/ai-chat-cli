@@ -33,20 +33,53 @@ and batch-process a whole TXT file into organized output folders.
 - **抗改版**：站点选择器全在 `sites.json`，网页改版只改配置不改代码
 - **自愈能力**：元素失效自动重找、检测到人机验证自动暂停等你处理、只在没拿到回复时才重发
 
+### 获取代码
+
+两种方式，效果一样（都是拿到仓库里那 16 个文件）：
+
+```bash
+# 方式一：git clone（推荐，方便以后 git pull 更新）
+git clone https://github.com/gyaoshi/ai-chat-cli.git
+cd ai-chat-cli
+```
+
+也可以直接在仓库页面点 **Code → Download ZIP**，解压后进入目录。**注意要整个文件夹一起用**——
+`main.py` 必须和 `sites.json` 放在同一目录，单独下载某一个文件是跑不起来的。
+
 ### 安装
 
 需要 **Python 3.10+**（Windows 上还需本机 Edge，Win10/11 自带）。
 不需要下载 Playwright 自带的 Chromium —— 直接复用系统 Edge。
 
 ```bat
-git clone https://github.com/gyaoshi/ai-chat-cli.git
-cd ai-chat-cli
 pip install -r requirements.txt
 ```
 
 `requirements.txt` 里只有一行：`playwright`。
 
-### 快速开始
+首次运行会在项目目录里**自动生成**这些东西，仓库里没有、也不需要你手动创建：
+
+| 自动生成 | 作用 |
+|---|---|
+| `browser_profile\` | 你的浏览器登录态（各站点的 cookie），只存在你本机 |
+| `output\` | 批量处理的回复归档 |
+| `test_report\` | 用 `inspect_site.py` / `probe_send.py` 排查时产生的截图与 DOM |
+| `python_path.txt` | （可选）你本机 Python 解释器路径，给 `ai.bat` 用 |
+
+### macOS / Linux 用户
+
+`.bat` 是 Windows 专有的，macOS / Linux 上**直接用 Python 调 main.py**，功能完全一样：
+
+```bash
+pip install -r requirements.txt
+playwright install chromium          # 没有 Edge，装 Playwright 自带的 Chromium
+# 把 sites.json 里每个站点的 "channel": "msedge" 改成 "chromium"
+python login_keep.py                 # 打开浏览器登录，关窗即保存
+python main.py chat all "问题"
+python main.py batch all prompts.txt
+```
+
+### 快速开始（Windows）
 
 ```bat
 :: 1. 打开浏览器登录（窗口保留 1 小时，慢慢登，登完关掉窗口即可）
@@ -63,6 +96,8 @@ ai.bat batch all prompts.txt
 
 > PowerShell 用户注意：PowerShell 不搜索当前目录，需要写成 `.\ai.bat sites`。
 > CMD 里则可以直接 `ai.bat sites`。
+>
+> **第一次用必须先跑 `login.bat`**，否则各站点没有登录态，程序会提示"未找到输入框"。
 
 ### 平台与命令
 
@@ -212,20 +247,55 @@ accounts, so quotas, tools and web-search behave exactly as they normally do.
 - **Redesign-proof**: every selector lives in `sites.json` — site changes need config edits, not code edits
 - **Self-healing**: re-locates detached elements, pauses for CAPTCHA so you can solve it, and only re-sends when no reply arrived
 
+### Get the code
+
+Two ways, same 16 files either way:
+
+```bash
+# Option 1: git clone (recommended — easy to `git pull` later)
+git clone https://github.com/gyaoshi/ai-chat-cli.git
+cd ai-chat-cli
+```
+
+Or click **Code → Download ZIP** on the repo page and unzip it. **Keep the folder together** —
+`main.py` must sit next to `sites.json`; downloading a single file will not work.
+
 ### Install
 
 Requires **Python 3.10+** (plus Microsoft Edge on Windows — bundled with Win10/11).
 Playwright's own Chromium download is **not** needed; the system Edge is reused.
 
 ```bat
-git clone https://github.com/gyaoshi/ai-chat-cli.git
-cd ai-chat-cli
 pip install -r requirements.txt
 ```
 
 `requirements.txt` contains exactly one line: `playwright`.
 
-### Quick start
+On first run these are **created inside the project folder** — they are not in the repo
+and you never need to create them by hand:
+
+| Created automatically | Purpose |
+|---|---|
+| `browser_profile/` | your browser login state (cookies), local to your machine only |
+| `output/` | archived answers from batch runs |
+| `test_report/` | screenshots and DOM dumps from `inspect_site.py` / `probe_send.py` |
+| `python_path.txt` | (optional) path to your Python interpreter, used by `ai.bat` |
+
+### macOS / Linux
+
+The `.bat` files are Windows-only. On macOS / Linux call `main.py` with Python directly —
+everything works the same:
+
+```bash
+pip install -r requirements.txt
+playwright install chromium          # no Edge — install Playwright's bundled Chromium
+# then set "channel": "chromium" for every site in sites.json
+python login_keep.py                 # open the browser to log in; closing it saves the session
+python main.py chat all "your question"
+python main.py batch all prompts.txt
+```
+
+### Quick start (Windows)
 
 ```bat
 :: 1. Open a browser and log in (the window stays open for an hour)
@@ -242,6 +312,9 @@ ai.bat batch all prompts.txt
 
 > PowerShell users: PowerShell does not search the current directory, so use `.\ai.bat sites`.
 > In CMD, `ai.bat sites` works as-is.
+>
+> **You must run `login.bat` first**, otherwise no site has a session and the tool reports
+> "input box not found".
 
 ### Platforms and commands
 

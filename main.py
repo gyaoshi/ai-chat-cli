@@ -41,18 +41,34 @@ def log(msg=""):
 
 
 def load_sites():
-    return json.loads(SITES_FILE.read_text(encoding="utf-8"))
+    if not SITES_FILE.is_file():
+        log(f"找不到站点配置文件: {SITES_FILE}")
+        log("请确认 sites.json 与 main.py 在同一目录（git clone 下来的整个文件夹要完整）。")
+        sys.exit(1)
+    try:
+        return json.loads(SITES_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        log(f"sites.json 格式有误（第 {e.lineno} 行）: {e.msg}")
+        sys.exit(1)
 
 
 def launch(pw, channel="msedge"):
     """启动可见的持久化浏览器（登录状态保存在 browser_profile/）"""
     PROFILE_DIR.mkdir(exist_ok=True)
-    return pw.chromium.launch_persistent_context(
-        str(PROFILE_DIR),
-        headless=False,          # 有界面，方便登录
-        channel=channel,         # 用本机 Edge
-        no_viewport=True,        # 跟随窗口大小
-    )
+    try:
+        return pw.chromium.launch_persistent_context(
+            str(PROFILE_DIR),
+            headless=False,          # 有界面，方便登录
+            channel=channel,         # 用本机 Edge
+            no_viewport=True,        # 跟随窗口大小
+        )
+    except Exception as e:
+        if "chromium" in str(e).lower() or "executable" in str(e).lower():
+            log(f"无法启动浏览器（channel={channel}）: {e}")
+            log("  本机没装 Edge 时（macOS / Linux 常见）：")
+            log("    1) playwright install chromium")
+            log('    2) 把 sites.json 里各站点的 "channel" 改成 "chromium"')
+        raise
 
 
 # ---------------- 页面操作 ----------------
