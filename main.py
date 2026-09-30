@@ -29,6 +29,8 @@ PROFILE_DIR = BASE / "browser_profile"
 OUTPUT_DIR = BASE / "output"
 SITES_FILE = BASE / "sites.json"
 
+__version__ = "0.1.0"
+
 # Windows 控制台输出统一为 UTF-8，避免 GBK 报错
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -38,6 +40,29 @@ if hasattr(sys.stdout, "reconfigure"):
 def log(msg=""):
     """进度/装饰信息一律走 stderr，保证 stdout 只有回复正文（方便重定向做脚本）"""
     print(msg, file=sys.stderr, flush=True)
+
+
+def die(msg, code):
+    """致命错误：信息走 stderr（不污染 stdout），并以指定退出码结束"""
+    log(msg)
+    sys.exit(code)
+
+
+# 退出码约定（写脚本时按这个判断成败）
+EXIT_OK = 0            # 全部成功
+EXIT_ERROR = 1         # 运行错误：配置缺失、提示词文件不存在等
+EXIT_USAGE = 2         # 用法错误（argparse 默认）
+EXIT_SITE_FAILED = 3   # 至少一个站点没拿到回复
+
+
+def _exit_if_failed(results):
+    """有任何站点失败就以 EXIT_SITE_FAILED 结束，方便脚本一次性判断成败"""
+    bad = [r for r in results if r.get("error") or not r.get("reply")]
+    if bad:
+        names = "、".join(r["name"] for r in bad)
+        log(f"\n{len(bad)}/{len(results)} 个站点未成功: {names}"
+            f"（退出码 {EXIT_SITE_FAILED}）")
+        sys.exit(EXIT_SITE_FAILED)
 
 
 def load_sites():
@@ -368,8 +393,7 @@ def _ask_one(pw, key, message, page, json_mode=False, out=None):
 def cmd_chat(args):
     keys = list(SITES) if args.site == "all" else [args.site]
     if args.site != "all" and args.site not in SITES:
-        print(f"未知站点: {args.site}，可用: {', '.join(SITES)} | all")
-        sys.exit(1)
+        die(f"未知站点: {args.site}，可用: {', '.join(SITES)} | all", EXIT_ERROR)
 
     results = []
     with sync_playwright() as pw:
@@ -398,19 +422,18 @@ def cmd_chat(args):
 
     if args.json:
         dump_json(results, args.out)
+    _exit_if_failed(results)
 
 
 def cmd_batch(args):
     keys = list(SITES) if args.site == "all" else [args.site]
     if args.site != "all" and args.site not in SITES:
-        print(f"未知站点: {args.site}，可用: {', '.join(SITES)} | all")
-        sys.exit(1)
+        die(f"未知站点: {args.site}，可用: {', '.join(SITES)} | all", EXIT_ERROR)
 
     prompts = []
     f = Path(args.file)
     if not f.is_file():
-        print(f"文件不存在: {args.file}")
-        sys.exit(1)
+        die(f"文件不存在: {args.file}", EXIT_ERROR)
     try:
         content = f.read_text(encoding="utf-8")
     except UnicodeDecodeError:
@@ -420,8 +443,7 @@ def cmd_batch(args):
         if line and not line.startswith("#"):
             prompts.append(line)
     if not prompts:
-        print("文件里没有可用的提示词（空行和 # 开头的行会被跳过）")
-        sys.exit(1)
+        die("文件里没有可用的提示词（空行和 # 开头的行会被跳过）", EXIT_ERROR)
 
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = OUTPUT_DIR / ts
@@ -458,13 +480,29 @@ def cmd_batch(args):
     if args.out:
         Path(args.out).write_text(blob, encoding="utf-8")
         log(f"已写入 {args.out}")
+    _exit_if_failed(results)
 
 
 def main():
     global SITES
     SITES = load_sites()
 
-    ap = argparse.ArgumentParser(description="AI 聊天命令行工具（豆包/DeepSeek 等）")
+    ap = argparse.ArgumentParser(
+        prog="ai-chat-cli",
+        description="AI 聊天命令行工具（豆包 / DeepSeek / 通义千问 / 腾讯元宝 / Kimi）",
+        epilog=(
+            "示例:\n"
+            '  ai.bat chat doubao "帮我写一首关于秋天的诗"        Windows\n'
+            '  python main.py chat all "解释一下贝叶斯定理"       macOS / Linux\n'
+            "  ai.bat batch all test_prompts.txt                  批量提问\n"
+            '  ai.bat chat doubao --json "问题" > r.json          给脚本用\n'
+            "\n"
+            "回复正文只从 stdout 输出，进度信息走 stderr。\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument("-V", "--version", action="version",
+                    version=f"ai-chat-cli {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("login", help="打开浏览器手动登录")

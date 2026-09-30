@@ -35,7 +35,7 @@ and batch-process a whole TXT file into organized output folders.
 
 ### 获取代码
 
-两种方式，效果一样（都是拿到仓库里那 16 个文件）：
+两种方式，效果一样（都是拿到仓库里的全部文件）：
 
 ```bash
 # 方式一：git clone（推荐，方便以后 git pull 更新）
@@ -76,7 +76,7 @@ playwright install chromium          # 没有 Edge，装 Playwright 自带的 Ch
 # 把 sites.json 里每个站点的 "channel": "msedge" 改成 "chromium"
 python login_keep.py                 # 打开浏览器登录，关窗即保存
 python main.py chat all "问题"
-python main.py batch all prompts.txt
+python main.py batch all test_prompts.txt
 ```
 
 ### 快速开始（Windows）
@@ -91,8 +91,11 @@ ai.bat chat mock "测试"
 :: 3. 正式使用
 ai.bat chat doubao "帮我写一首关于秋天的五言绝句"
 ai.bat chat all "解释一下什么是贝叶斯定理"
-ai.bat batch all prompts.txt
+ai.bat batch all test_prompts.txt
 ```
+
+> `test_prompts.txt` 是仓库自带的示例提示词文件（每行一条，`#` 开头为注释），
+> 想批量提问时把它换成自己的 TXT 即可。
 
 > PowerShell 用户注意：PowerShell 不搜索当前目录，需要写成 `.\ai.bat sites`。
 > CMD 里则可以直接 `ai.bat sites`。
@@ -123,7 +126,11 @@ ai.bat sites                          查看已配置站点
 ai.bat chat <站点|all> [问题] [--json] [--out FILE]
 ai.bat batch <站点|all> <TXT> [--json] [--out FILE]
 login.bat [站点...] [--minutes N] [--forever]   登录专用，窗口保留更久
+ai.bat --version                      查看版本
+ai.bat --help                         查看完整帮助与示例
 ```
+
+> macOS / Linux 上把 `ai.bat` 换成 `python main.py` 即可（`login.bat` 换成 `python login_keep.py`）。
 
 ### 输出约定（写脚本必读）
 
@@ -142,17 +149,42 @@ ai.bat chat deepseek --json --out r.json "问题"
 `--json` 每条记录的字段：`site`（站点名）、`name`（中文名）、`message`（提问）、
 `reply`（回复，失败为 `null`）、`seconds`（耗时秒）、`error`（错误信息或 `null`）。
 
-Python 里调用：
+Python 里调用（推荐 `sys.executable` + `main.py`，跨平台且不依赖 `.bat`）：
 
 ```python
-import json, subprocess
+import json, subprocess, sys
+from pathlib import Path
 
-out = subprocess.run(["ai.bat", "chat", "doubao", "--json", "你好"],
-                     capture_output=True, text=True, encoding="utf-8")
+PROJ = Path(r"D:\tools\ai-chat-cli")          # 换成你的项目目录
+
+out = subprocess.run(
+    [sys.executable, "main.py", "chat", "doubao", "--json", "你好"],
+    cwd=PROJ, capture_output=True, text=True, encoding="utf-8",
+)
 reply = json.loads(out.stdout)[0]["reply"]
 ```
 
+> 注意：**不要**写 `subprocess.run(["ai.bat", ...])`。Windows 不会自动补全 `.bat` 扩展名，
+> 这样会直接报 `FileNotFoundError: [WinError 2]`。要么像上面直接用 `main.py`，
+> 要么写成 `subprocess.run("ai.bat chat doubao --json 你好", shell=True, cwd=PROJ)`。
+
 批处理除了逐条存档，还会生成 `output/<时间戳>/summary.json` 汇总所有问答。
+
+**退出码**（脚本判断成败用，错误信息一律走 stderr）：
+
+| 退出码 | 含义 |
+|:---:|------|
+| `0` | 全部成功 |
+| `1` | 运行错误：配置缺失、提示词文件不存在等 |
+| `2` | 用法错误（参数写错，argparse 默认行为） |
+| `3` | 至少一个站点没拿到回复（回复正文为 `(未捕获到回复)`） |
+
+所以脚本里可以这样用：
+
+```bash
+ai.bat chat all "问题" > answer.txt 2>/dev/null
+if [ $? -ne 0 ]; then echo "有站点失败了"; fi
+```
 
 ### 配置站点（sites.json）
 
@@ -177,14 +209,20 @@ reply = json.loads(out.stdout)[0]["reply"]
 
 字段速查：
 
-| 字段 | 作用 |
-|------|------|
-| `input_selectors` | 输入框，按顺序试，取第一个可见的 |
-| `send_method` | `enter` 回车发送；`button` 点发送按钮（编辑器类页面更可靠） |
-| `reply_selectors` | 回复容器，取最后一个元素作为最新回复 |
-| `sent_marker_selectors` | 对话消息节点，数量 +1 说明发送成功（适发送后不清空输入框的站点） |
-| `placeholder_texts` | 站点把"请输入…"写进 DOM 时，填进来避免被误判成"还没发出去" |
-| `stable_seconds` | 流式回复的结束判定阈值 |
+| 字段 | 必填 | 作用 |
+|------|:---:|------|
+| `name` | ✅ | 显示名（日志里用，如「豆包」） |
+| `url` | ✅ | 站点地址；`file:` 开头的相对路径会按项目目录解析（`mock` 站点就靠这个） |
+| `channel` | | 浏览器内核，默认 `msedge`；无 Edge 的机器改成 `chromium` |
+| `input_selectors` | ✅ | 输入框选择器，按顺序试，取第一个可见的 |
+| `send_method` | | `enter` 按回车发送；`button` 点发送按钮（富文本编辑器更可靠） |
+| `send_button_selectors` | | `send_method=button` 时用，找不到按钮会退回按回车 |
+| `reply_selectors` | ✅ | 回复容器，取最后一个元素作为最新回复 |
+| `sent_marker_selectors` | | 对话消息节点，数量 +1 说明发送成功（适合发送后不清空输入框的站点） |
+| `placeholder_texts` | | 站点把"请输入…"写进 DOM 时填这里，避免被误判成"还没发出去" |
+| `load_wait` | | 打开页面后等几秒再找输入框，默认 5～8 |
+| `stable_seconds` | | 流式回复的结束判定阈值，文本连续 N 秒不变即认为生成完 |
+| `reply_timeout` | | 等待回复的最长秒数，默认 300 |
 
 ### 换到其他电脑
 
@@ -225,6 +263,10 @@ requirements.txt         playwright
 请遵守各平台的服务条款与 robots 协议，控制请求频率，不要用于批量爬取、商业倒卖或任何违法用途。
 使用者需自行承担使用风险，作者不对账号受限、数据丢失等后果负责。
 
+### 许可证
+
+[MIT](LICENSE) © 2026 gyaoshi
+
 ---
 
 ## English
@@ -249,7 +291,7 @@ accounts, so quotas, tools and web-search behave exactly as they normally do.
 
 ### Get the code
 
-Two ways, same 16 files either way:
+Two ways, same contents either way:
 
 ```bash
 # Option 1: git clone (recommended — easy to `git pull` later)
@@ -292,7 +334,7 @@ playwright install chromium          # no Edge — install Playwright's bundled 
 # then set "channel": "chromium" for every site in sites.json
 python login_keep.py                 # open the browser to log in; closing it saves the session
 python main.py chat all "your question"
-python main.py batch all prompts.txt
+python main.py batch all test_prompts.txt
 ```
 
 ### Quick start (Windows)
@@ -307,8 +349,11 @@ ai.bat chat mock "test"
 :: 3. Real usage
 ai.bat chat doubao "Write a haiku about autumn"
 ai.bat chat all "Explain Bayes' theorem"
-ai.bat batch all prompts.txt
+ai.bat batch all test_prompts.txt
 ```
+
+> `test_prompts.txt` is the bundled sample prompt file (one prompt per line,
+> lines starting with `#` are ignored). Swap in your own TXT for batch runs.
 
 > PowerShell users: PowerShell does not search the current directory, so use `.\ai.bat sites`.
 > In CMD, `ai.bat sites` works as-is.
@@ -341,7 +386,11 @@ ai.bat sites                          list configured sites
 ai.bat chat <site|all> [question] [--json] [--out FILE]
 ai.bat batch <site|all> <TXT> [--json] [--out FILE]
 login.bat [site...] [--minutes N] [--forever]   login-only, keeps the window longer
+ai.bat --version                      show the version
+ai.bat --help                         show full help with examples
 ```
+
+> On macOS / Linux replace `ai.bat` with `python main.py` (and `login.bat` with `python login_keep.py`).
 
 ### Output contract (read this before scripting)
 
@@ -360,17 +409,40 @@ ai.bat chat deepseek --json --out r.json "question"
 Each `--json` record contains: `site`, `name`, `message`, `reply` (`null` on failure),
 `seconds`, `error`.
 
-Calling it from Python:
+Calling it from Python (use `sys.executable` + `main.py` — cross-platform, no `.bat` needed):
 
 ```python
-import json, subprocess
+import json, subprocess, sys
+from pathlib import Path
 
-out = subprocess.run(["ai.bat", "chat", "doubao", "--json", "hello"],
-                     capture_output=True, text=True, encoding="utf-8")
+PROJ = Path(r"/path/to/ai-chat-cli")
+
+out = subprocess.run(
+    [sys.executable, "main.py", "chat", "doubao", "--json", "hello"],
+    cwd=PROJ, capture_output=True, text=True, encoding="utf-8",
+)
 reply = json.loads(out.stdout)[0]["reply"]
 ```
 
+> Do **not** write `subprocess.run(["ai.bat", ...])`. Windows does not resolve the `.bat`
+> extension, so it fails with `FileNotFoundError: [WinError 2]`. Either call `main.py`
+> as above, or use `subprocess.run("ai.bat chat doubao --json hello", shell=True, cwd=PROJ)`.
+
 Batch mode also writes `output/<timestamp>/summary.json` summarizing every Q&A pair.
+
+**Exit codes** (for scripts; error messages always go to stderr):
+
+| Code | Meaning |
+|:---:|---------|
+| `0` | everything succeeded |
+| `1` | runtime error: missing config, prompt file not found, etc. |
+| `2` | usage error (bad arguments — argparse default) |
+| `3` | at least one site returned no reply (its `reply` is `null` / `(未捕获到回复)`) |
+
+```bash
+ai.bat chat all "question" > answer.txt 2>/dev/null
+if [ $? -ne 0 ]; then echo "some site failed"; fi
+```
 
 ### Configuring a site (sites.json)
 
@@ -393,14 +465,20 @@ Batch mode also writes `output/<timestamp>/summary.json` summarizing every Q&A p
 }
 ```
 
-| Field | Purpose |
-|-------|---------|
-| `input_selectors` | The chat box; tried in order, first visible one wins |
-| `send_method` | `enter` = press Enter; `button` = click the send button (more reliable on rich-text editors) |
-| `reply_selectors` | Answer containers; the last element is treated as the newest reply |
-| `sent_marker_selectors` | Conversation nodes; count +1 means the message was posted (for sites that don't clear the input) |
-| `placeholder_texts` | For sites that render their hint text as real DOM text — prevents false "not sent" detection |
-| `stable_seconds` | Streaming-end threshold |
+| Field | Required | Purpose |
+|-------|:---:|---------|
+| `name` | ✅ | Display name used in logs (e.g. "Doubao") |
+| `url` | ✅ | Site address; relative `file:` paths resolve against the project folder (used by the `mock` site) |
+| `channel` | | Browser channel, defaults to `msedge`; set to `chromium` where Edge is unavailable |
+| `input_selectors` | ✅ | Chat box selectors; tried in order, the first visible one wins |
+| `send_method` | | `enter` = press Enter; `button` = click the send button (more reliable on rich-text editors) |
+| `send_button_selectors` | | Used when `send_method=button`; falls back to Enter if no button is found |
+| `reply_selectors` | | Answer containers; the last element is treated as the newest reply |
+| `sent_marker_selectors` | | Conversation nodes; count +1 means the message was posted (for sites that don't clear the input) |
+| `placeholder_texts` | | For sites that render their hint text as real DOM text — prevents false "not sent" detection |
+| `load_wait` | | Seconds to wait after page load before locating the input box (5–8 typical) |
+| `stable_seconds` | | Streaming-end threshold: text unchanged for N seconds means the answer is complete |
+| `reply_timeout` | | Max seconds to wait for a reply, default 300 |
 
 ### Moving to another machine
 
