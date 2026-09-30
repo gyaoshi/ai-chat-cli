@@ -167,6 +167,7 @@ reply = json.loads(out.stdout)[0]["reply"]
 | 抓到思考过程而不是答案 | 调整 `reply_selectors`，排除思维链容器（如 Kimi 的 `.toolcall-content-text`） |
 | 弹出人机验证 | 程序自动暂停，在窗口里手动完成验证后自动继续 |
 | 日志出现"未能确认消息已发出" | 发送判据不够准，补 `sent_marker_selectors` / `placeholder_texts` |
+| `browser_profile\` 越用越大（几百 MB） | 都是可再生的浏览器缓存，运行 `python clean_cache.py` 清理，**登录状态不受影响** |
 
 ### 项目结构
 
@@ -176,6 +177,7 @@ sites.json               站点配置
 ai.bat / login.bat       启动器（自动寻找 Python 解释器）
 login_keep.py            登录窗口（窗口保留 N 分钟，关窗即保存）
 kill_stale.py            清理占用 browser_profile 的残留 Edge 进程
+clean_cache.py           只清浏览器缓存、保留登录状态（profile 变大时用）
 inspect_site.py          抓页面 DOM 结构 + 截图（网页改版时用）
 probe_send.py            实发一条消息验证选择器（同时 dump 回复 DOM 到 test_report/）
 test_mock.html           本地模拟 AI 页面（自测用）
@@ -340,6 +342,7 @@ No Edge installed? Run `playwright install chromium` and set `channel` to `"chro
 | Symptom | Fix |
 |---------|-----|
 | Garbled launch error / "opened in another session" | A stale Edge holds the profile — run `python kill_stale.py` and retry |
+| `browser_profile\` grows to hundreds of MB | All disposable browser cache — run `python clean_cache.py`; logins are kept |
 | Input box never appears | Log in again (`login.bat`), or the site was redesigned and selectors need updating |
 | You get the chain-of-thought instead of the answer | Adjust `reply_selectors` to exclude the reasoning container (e.g. Kimi's `.toolcall-content-text`) |
 | CAPTCHA appears | The tool pauses automatically; solve it in the window and it continues |
@@ -353,6 +356,7 @@ sites.json               site configuration
 ai.bat / login.bat       Windows launchers (auto-detect the Python interpreter)
 login_keep.py            login window (stays open N minutes, saves on close)
 kill_stale.py            kill leftover Edge processes holding browser_profile
+clean_cache.py           trim browser caches only, keep logins (when profile grows big)
 inspect_site.py          dump a site's DOM structure + screenshot (for redesigns)
 probe_send.py            send one real message to verify selectors (also dumps reply DOM to test_report/)
 test_mock.html           local mock AI page for self-testing
