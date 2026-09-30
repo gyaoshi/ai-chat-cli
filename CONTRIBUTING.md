@@ -1,7 +1,9 @@
-# 贡献指南
+# 贡献指南 / Contributing
 
 先说结论：这个项目最需要的贡献是 **站点选择器更新**（网页一改版就失效）和 **新的站点适配**。
 改代码前请先读完「输出契约」那一节 —— 它是这个工具能被脚本可靠调用的前提。
+
+> **中文** · [English](#english)
 
 ## 开发环境
 
@@ -128,3 +130,144 @@ die("致命错误", 1)  # → stderr + sys.exit(1)
 - 不要走逆向接口、不要伪造请求、不要绕过平台限制。这个工具刻意只做"浏览器替你打字"。
 - 不要加入任何批量爬取、刷量、倒卖类功能。
 - 不要为了"跑得快"默认开并发或缩短间隔 —— 风控是真实存在的，速度不该以牺牲账号为代价。
+
+---
+
+## English
+
+Bottom line first: the contributions this project needs most are **selector updates** (sites
+redesign and break them) and **new site adapters**. Read the "Output contract" section before
+touching code — it is what makes this tool reliably callable from scripts.
+
+### Development setup
+
+```bash
+git clone https://github.com/gyaoshi/ai-chat-cli.git
+cd ai-chat-cli
+
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+source .venv/bin/activate
+
+pip install -e ".[dev]"          # editable install — code changes take effect immediately
+playwright install chromium      # the e2e tests need a headless browser
+```
+
+Running the tests:
+
+```bash
+pytest -m "not e2e" -q    # fast: no browser, ~30 seconds
+pytest -q                 # everything: includes the mock-site e2e, ~2 minutes
+ruff check . && ruff format --check .
+```
+
+The e2e tests need **no account at all**: they use the repository's own `test_mock.html` as a site
+and verify the whole path from *send → wait for streaming to finish → read the reply → write stdout*.
+CI switches to headless mode through two environment variables:
+
+```bash
+AI_CHAT_CLI_HEADLESS=1 AI_CHAT_CLI_CHANNEL=chromium pytest -m e2e
+```
+
+### Output contract (read before changing code)
+
+| Stream | Contents |
+|---|---|
+| **stdout** | reply text only; structured results under `--json` / `--dry-run` |
+| **stderr** | progress, site names, timings, warnings, errors |
+
+All output must go through `ai_chat_cli/console.py`:
+
+```python
+from .console import log, warn, die, out
+
+log("progress info")  # → stderr
+warn("warning")  # → stderr, still shown under -q
+out(reply)  # → stdout — the only place allowed to write content
+die("fatal error", 1)  # → stderr + sys.exit(1)
+```
+
+Do **not** use bare `print()` for logs — it would break
+`ai-chat-cli chat doubao "question" > answer.txt`.
+
+Exit-code semantics (breaking these makes scripts fail silently):
+
+| Code | Meaning |
+|:--:|---|
+| 0 | everything succeeded |
+| 1 | runtime error (missing config, file not found) |
+| 2 | usage error (bad arguments) |
+| 3 | at least one site returned no reply |
+
+### Adding a new site
+
+1. **Dump the structure.** Log in once in the browser, then run:
+
+   ```bash
+   python inspect_site.py <site-key>       # or temporarily add the new site to sites.json first
+   ```
+   Output lands in `test_report/<site-key>.{json,png}`: an overview of input boxes,
+   `contenteditable` elements, and `data-testid` attributes.
+
+2. **Write the config.** Add a block to `sites.json` (field descriptions are in the README's
+   "configuring sites" table):
+
+   ```json
+   "newsite": {
+     "name": "Some Site",
+     "url": "https://example.com/chat/",
+     "channel": "msedge",
+     "input_selectors": ["textarea", "div[contenteditable='true']"],
+     "reply_selectors": [".answer-markdown"],
+     "sent_marker_selectors": ["div.message"],
+     "send_method": "enter",
+     "load_wait": 6,
+     "stable_seconds": 3,
+     "reply_timeout": 300
+   }
+   ```
+
+3. **Verify with a real send**:
+
+   ```bash
+   python probe_send.py newsite            # sends one real message, dumps the reply DOM to test_report/
+   ai-chat-cli chat newsite "what is 1+1"
+   ```
+
+4. **Sync the bundled copy**: `cp sites.json ai_chat_cli/data/sites.json`
+   (a test asserts the two are identical, otherwise pip users keep getting the old config).
+
+5. **Run the tests**: `pytest -q && ruff check .`
+
+#### Common selector problems
+
+| Symptom | Fix |
+|---|---|
+| The input box is not cleared after sending | Set `sent_marker_selectors` and detect "message node count +1" instead |
+| The site writes its hint text into the DOM (e.g. Tongyi's "向千问提问") | List it in `placeholder_texts`, otherwise the send looks like it never happened |
+| You captured the chain of thought instead of the answer | Exclude the reasoning container with `:not(...)` in `reply_selectors` (that is what Kimi's `.toolcall-content-text` needs) |
+| A send button is more reliable (rich-text editors) | `"send_method": "button"` plus `send_button_selectors` |
+| Very long answers, slow streaming | Increase `stable_seconds` / `reply_timeout` |
+
+### Code style
+
+- `ruff check` + `ruff format`, line width 100, target Python 3.10. Run both before committing —
+  CI checks them.
+- Comments and docstrings are written in Chinese; explain **why** the code is written this way
+  rather than restating what it does.
+- Add type hints to new public functions.
+
+### Submitting a PR
+
+- One PR, one thing.
+- State what changed, why, and how you verified it (commands and output are welcome).
+- Never commit `browser_profile/`, `output/`, `test_report/`, or `python_path.txt`.
+  Strip accounts, phone numbers, and cookies from any logs or screenshots first.
+
+### Things not to do
+
+- No reverse-engineered APIs, no forged requests, no bypassing platform limits. This tool
+  deliberately does exactly one thing: it types into a browser for you.
+- Do not add bulk-scraping, engagement-farming, or resale features.
+- Do not enable concurrency or shorten delays by default just to "go faster" — rate limiting is
+  real, and speed must never come at the cost of someone's account.

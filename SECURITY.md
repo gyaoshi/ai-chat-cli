@@ -1,4 +1,6 @@
-# 安全说明
+# 安全说明 / Security
+
+> **中文** · [English](#english)
 
 ## 报告安全问题
 
@@ -43,3 +45,60 @@
 - 目标网页改版导致选择器失效 —— 请开普通 issue
 - 「用这个工具可能违反某平台服务条款」 —— 这是使用者的判断，README 的免责声明已写明
 - 需要 root / 管理员权限才能做的事（本项目不需要，也不请求）
+
+---
+
+## English
+
+### Reporting a security issue
+
+Please do **not** open a public issue.
+
+- Preferred: GitHub [Private vulnerability reporting](https://github.com/gyaoshi/ai-chat-cli/security/advisories/new)
+- Or message the author directly (contact details are on the repository homepage)
+
+Please include the affected version, reproduction steps, and possible impact. I will reply as soon
+as I can. Once a fix is released, I will credit you here (if you would like that).
+
+### Security model of this project
+
+Once you understand the points below, it becomes clear what counts as an issue and what does not:
+
+1. **It never touches credentials.** There are no tokens, passwords, or API keys anywhere in the
+   project, and no reverse-engineered APIs. You log in manually in a visible browser window, and the
+   session lives in Chromium's own profile directory (`browser_profile/`) — the program merely
+   points Playwright at it.
+
+2. **`browser_profile/` *is* your logged-in identity.** It holds cookies and Local Storage;
+   whoever has it has your sessions on every site. Therefore:
+   - it is excluded via `.gitignore` — **never commit it**;
+   - do not copy it to another machine or share it with anyone (the README's "moving to another
+     machine" section makes the same point);
+   - `clean_cache.py` deletes only regenerable caches; it never touches cookies, Local Storage,
+     or IndexedDB.
+
+3. **Site configuration is the injection surface.** The selectors and URLs in `sites.json` are fed
+   into the browser. Only use a `sites.json` you trust; if someone sends you a config file, read the
+   `url` fields first.
+
+4. **There is no sandbox.** The tool runs on your own machine, with your own account, at your own
+   privilege level — the same boundary as clicking the page yourself.
+
+### Examples of security issues
+
+- Content from `sites.json` being turned into command execution / arbitrary code execution
+- Login credentials written to logs or stdout, or committed to the repository
+- A download target (such as the `--out` path) being constructible in a way that overwrites
+  arbitrary files
+- An injection point in the CI workflow that a PR can exploit (for example a PR title interpolated
+  straight into a shell command)
+
+### Not security issues
+
+- A site rate-limits your account or shows a CAPTCHA — that is the platform's own controls;
+  slow down and use the tool compliantly
+- A site redesign breaks the selectors — please open a regular issue
+- "This tool may violate some platform's terms of service" — that is the user's own call, and the
+  README's disclaimer already says so
+- Anything that would require root / administrator privileges (this project does not need them and
+  does not ask for them)
