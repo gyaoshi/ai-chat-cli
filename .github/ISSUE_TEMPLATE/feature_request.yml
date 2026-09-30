@@ -1,0 +1,35 @@
+name: Feature request
+description: 想要新功能 / 想让某个站点更好用
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题
+      description: 说清场景比说清方案更有用
+      placeholder: 我每晚要跑 50 条提示词，现在串行太慢，想按站点并行……
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你设想的做法（可选）
+      placeholder: 增加 --parallel N 参数
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 试过的替代方案（可选）
+      placeholder: 现在我是开两个终端各跑一个站点
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 影响范围
+      options:
+        - label: 新增命令行参数
+        - label: 新增/修改站点适配（sites.json）
+        - label: 影响 stdout/stderr 输出契约（会让现有脚本需要改动）
+        - label: 只是文档改进

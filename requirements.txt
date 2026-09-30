@@ -1,1 +1,3 @@
-playwright>=1.40
+# 从这里 clone 下来直接跑时用这个（最简单，不用打包也不用安装）
+# 如果已经 `pipx install ai-chat-cli` 装成了命令，就不需要这个文件了。
+playwright>=1.40,<2

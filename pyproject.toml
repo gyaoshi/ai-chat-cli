@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-chat-cli"
+dynamic = ["version"]
+description = "Drive web AIs (Doubao / DeepSeek / Qwen / Yuanbao / Kimi) from your terminal via Playwright"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "gyaoshi" }]
+keywords = ["cli", "playwright", "automation", "chatbot", "llm", "doubao", "deepseek", "kimi"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Natural Language :: Chinese (Simplified)",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Utilities",
+]
+dependencies = [
+  # 上限很重要：Playwright 大版本可能改 API，卡住避免某天 pip 升级后悄悄坏掉
+  "playwright>=1.40,<2",
+]
+
+[project.optional-dependencies]
+# 交互模式的上/下箭头历史（没装也能用，只是没有历史）
+interactive = ["prompt_toolkit>=3.0"]
+# 生成 bash/zsh 补全脚本：ai-chat-cli --print-completion bash
+completion = ["shtab>=1.6"]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+  "build>=1.2",
+  "prompt_toolkit>=3.0",
+  "shtab>=1.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/gyaoshi/ai-chat-cli"
+Repository = "https://github.com/gyaoshi/ai-chat-cli"
+Issues = "https://github.com/gyaoshi/ai-chat-cli/issues"
+Changelog = "https://github.com/gyaoshi/ai-chat-cli/blob/main/CHANGELOG.md"
+
+[project.scripts]
+ai-chat-cli = "ai_chat_cli.cli:main"
+
+[tool.setuptools]
+packages = ["ai_chat_cli"]
+
+[tool.setuptools.package-data]
+ai_chat_cli = ["data/*.json", "data/*.html", "data/*.txt"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ai_chat_cli.__version__" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [".venv", "browser_profile", "output", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF"]
+ignore = [
+  "E501",   # 行宽交给 formatter，中文注释一行装不下很正常
+  "UP009",  # 全项目统一保留 `# -*- coding: utf-8 -*-`，是刻意的风格
+  "SIM105", # try/except 里带解释性注释，比 contextlib.suppress 更好读
+  "RUF001", # 中文全角标点在字符串里是刻意的
+  "RUF002",
+  "RUF003",
+  "SIM108", # 三元表达式不一定更好读
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "e2e: 需要真实浏览器的端到端测试（CI 用 headless chromium）",
+]

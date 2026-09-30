@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用问题 / 求助
+    url: https://github.com/gyaoshi/ai-chat-cli/blob/main/README.md
+    about: 先看 README 的「常见故障」和「配置站点」两节，大部分问题那里都有答案
+  - name: 安全相关
+    url: https://github.com/gyaoshi/ai-chat-cli/blob/main/SECURITY.md
+    about: 安全问题请不要开公开 issue，按 SECURITY.md 里的方式联系

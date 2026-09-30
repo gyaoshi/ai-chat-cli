@@ -18,3 +18,15 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+# packaging / tooling
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+# 用户级配置（pip 安装后配置在用户目录，正常不该出现在仓库里）
+*.local.json

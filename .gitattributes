@@ -1,7 +1,25 @@
+# 统一换行符：源码一律 LF，Windows 批处理必须 CRLF
 * text=auto
-*.py  text eol=lf
-*.md  text eol=lf
+
+*.py   text eol=lf
+*.md   text eol=lf
 *.json text eol=lf
 *.html text eol=lf
+*.txt  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.svg  text eol=lf
+*.cfg  text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# .bat 必须保留 CRLF，否则部分 Windows 环境下会执行异常
 *.bat text eol=crlf
-*.txt text eol=lf
+
+# 二进制，别碰
+*.png binary
+*.jpg binary
+*.ico binary
+*.whl binary
+*.gz  binary

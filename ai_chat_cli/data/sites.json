@@ -1,0 +1,124 @@
+{
+  "doubao": {
+    "name": "豆包",
+    "url": "https://www.doubao.com/chat/",
+    "channel": "msedge",
+    "input_selectors": [
+      "div.tiptap.ProseMirror[contenteditable='true']",
+      "textarea[data-testid='chat_input_input']",
+      "div[contenteditable='true'][data-testid='chat_input_input']",
+      "#chat-input",
+      "div[contenteditable='true']"
+    ],
+    "reply_selectors": [
+      "[data-testid='receive_message'] [data-testid='message_text_content']",
+      "[data-testid='message_text_content']",
+      "[data-testid='receive_message']",
+      "[data-testid='message_content']"
+    ],
+    "send_method": "button",
+    "send_button_selectors": [
+      "[data-testid='chat_input_send_button']",
+      "#flow-end-msg-send"
+    ],
+    "sent_marker_selectors": [
+      "[data-testid='message_text_content']"
+    ],
+    "load_wait": 6,
+    "stable_seconds": 3,
+    "reply_timeout": 300
+  },
+  "deepseek": {
+    "name": "DeepSeek",
+    "url": "https://chat.deepseek.com/",
+    "channel": "msedge",
+    "input_selectors": [
+      "textarea[placeholder*='发送消息']",
+      "textarea[placeholder*='DeepSeek']",
+      "#chat-input",
+      "textarea"
+    ],
+    "reply_selectors": [
+      ".ds-assistant-message-main-content",
+      "div.ds-markdown",
+      ".ds-markdown"
+    ],
+    "sent_marker_selectors": ["div.ds-message"],
+    "send_method": "enter",
+    "load_wait": 5,
+    "stable_seconds": 3,
+    "reply_timeout": 300
+  },
+  "tongyi": {
+    "name": "通义千问",
+    "url": "https://www.qianwen.com/",
+    "channel": "msedge",
+    "input_selectors": [
+      "div[contenteditable='true']"
+    ],
+    "placeholder_texts": [
+      "向千问提问"
+    ],
+    "sent_marker_selectors": [
+      "div.chat-round[data-chat]",
+      "div.question-text-card",
+      "[data-chat-list-key]"
+    ],
+    "reply_selectors": [
+      ".qk-markdown",
+      ".chat-answers-card-wrap .answer-common-card",
+      "[class*='markdown']"
+    ],
+    "send_method": "enter",
+    "load_wait": 8,
+    "stable_seconds": 3,
+    "reply_timeout": 300
+  },
+  "yuanbao": {
+    "name": "腾讯元宝",
+    "url": "https://yuanbao.tencent.com/",
+    "channel": "msedge",
+    "input_selectors": [
+      "div.ql-editor[contenteditable='true']",
+      "div[contenteditable='true']"
+    ],
+    "reply_selectors": [
+      ".hyc-content-md",
+      ".hyc-common-markdown",
+      ".agent-chat__speech-text"
+    ],
+    "send_method": "enter",
+    "load_wait": 6,
+    "stable_seconds": 3,
+    "reply_timeout": 300
+  },
+  "kimi": {
+    "name": "Kimi",
+    "url": "https://www.kimi.com/",
+    "channel": "msedge",
+    "input_selectors": [
+      "div.chat-input-editor[contenteditable='true']",
+      "div[contenteditable='true']"
+    ],
+    "reply_selectors": [
+      ".markdown-container:not(.toolcall-content-text) .markdown",
+      ".message-content",
+      "div[class*='markdown']"
+    ],
+    "send_method": "enter",
+    "load_wait": 6,
+    "stable_seconds": 3,
+    "reply_timeout": 300
+  },
+  "mock": {
+    "name": "Mock测试",
+    "url": "file:./test_mock.html",
+    "channel": "msedge",
+    "input_selectors": ["textarea#chat-input"],
+    "reply_selectors": [".mock-reply"],
+    "send_method": "enter",
+    "load_wait": 1,
+    "stable_seconds": 1,
+    "reply_timeout": 30
+  }
+}
